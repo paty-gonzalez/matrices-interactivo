@@ -1,0 +1,364 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Recorrido de la isla</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: cuaderno de laboratorio para proyector. Código y variables a la izquierda, la isla a la derecha, controles abajo. Un solo look claro, a propósito. */
+:root {
+  --paper: #FBF8F1;
+  --grid-line: #E8E1D1;
+  --ink: #1D2B36;
+  --ink-soft: #4A5560;
+  --card: #FFFFFF;
+  --rule: #E0D8C6;
+  --orange: #F2994A;
+  --orange-deep: #B4501A;
+  --orange-tint: #FBE1C8;
+  --teal: #1B6F80;
+  --teal-tint: #D6ECEF;
+  --teal-code: #9FD3DC;
+  --palm: #E3EEDB;
+  --code-bg: #1D2B36;
+  --code-fg: #FBF8F1;
+  --code-hl: #2F4252;
+  --font-text: "Atkinson Hyperlegible", Verdana, sans-serif;
+  --font-code: "IBM Plex Mono", "Courier New", monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body {
+  background-color: var(--paper);
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 32px 32px;
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-size: 18px;
+  line-height: 1.45;
+  padding-inline: 24px;
+  padding-block: 20px 32px;
+}
+.wrap { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; }
+.eyebrow { font-size: 14px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--orange-deep); }
+h1 { font-size: clamp(28px, 4vw, 44px); line-height: 1.1; margin: 4px 0 0; text-wrap: balance; }
+.modes { display: flex; gap: 6px; flex-wrap: wrap; }
+.seg { font: 700 16px var(--font-text); color: var(--ink); background: var(--card); border: 2px solid var(--rule); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+.seg[aria-pressed="true"] { background: var(--ink); color: var(--code-fg); border-color: var(--ink); }
+.main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.code { background: var(--code-bg); color: var(--code-fg); border-radius: 14px; padding: 16px 0; font-family: var(--font-code); font-size: clamp(15px, 1.7vw, 22px); line-height: 1.7; overflow-x: auto; }
+.ln { display: flex; gap: 14px; padding: 0 20px; white-space: pre; border-left: 6px solid transparent; transition: background 0.2s; }
+.ln .num { color: #6E7F8C; min-width: 1.2em; text-align: right; user-select: none; }
+.ln.on { background: var(--code-hl); border-left-color: var(--orange); }
+.kf { color: var(--orange); } .kc { color: var(--teal-code); } .ks { color: #F6C99D; }
+.vars { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.var { background: var(--card); border: 2px solid var(--rule); border-radius: 12px; padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; }
+.var .k { font-family: var(--font-code); font-size: 15px; color: var(--ink-soft); }
+.var .v { font-family: var(--font-code); font-size: clamp(26px, 3vw, 38px); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.var.f .v { color: var(--orange-deep); } .var.c .v { color: var(--teal); }
+.var.flash { border-color: var(--orange); }
+.note { background: var(--card); border: 2px solid var(--rule); border-radius: 12px; padding: 14px 18px; font-size: clamp(18px, 2vw, 24px); min-height: 3.6em; display: flex; align-items: center; }
+.note.ask { background: var(--orange-tint); border-color: var(--orange); font-weight: 700; }
+.isla-card { background: var(--card); border: 2px solid var(--rule); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.grid { display: grid; grid-template-columns: auto repeat(var(--cols), minmax(0, 1fr)); gap: 8px; width: 100%; max-width: 560px; }
+.hdr { font-family: var(--font-code); font-size: 16px; color: var(--ink-soft); text-align: center; align-self: center; padding: 2px 4px; border-radius: 6px; }
+.hdr.row { text-align: right; padding-right: 8px; }
+.hdr.hot-f { color: var(--code-fg); background: var(--orange-deep); }
+.hdr.hot-c { color: var(--code-fg); background: var(--teal); }
+.cell { position: relative; aspect-ratio: 1; max-width: 100%; background: var(--palm); border: 3px solid transparent; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: clamp(28px, 4.2vw, 56px); cursor: pointer; transition: transform 0.15s, background 0.2s; }
+.cell.rowband { background: var(--orange-tint); }
+.cell.cur { border-color: var(--orange); transform: scale(1.06); box-shadow: 0 6px 16px rgba(180, 80, 26, 0.25); }
+.cell.hit { background: #F7D2B0; }
+.cell .badge { position: absolute; top: 4px; left: 6px; font-family: var(--font-code); font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.cell:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+.legend { font-size: 15px; color: var(--ink-soft); text-align: center; }
+.out { background: var(--code-bg); color: var(--code-fg); border-radius: 12px; padding: 12px 16px; font-family: var(--font-code); font-size: 16px; min-height: 64px; max-height: 190px; overflow-y: auto; width: 100%; }
+.out .lbl { color: #8FA0AD; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; font-family: var(--font-text); }
+.out div.line { white-space: pre; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: var(--card); border: 2px solid var(--rule); border-radius: 14px; padding: 12px 14px; }
+.btn { font: 700 17px var(--font-text); color: var(--ink); background: var(--paper); border: 2px solid var(--rule); border-radius: 10px; padding: 10px 16px; cursor: pointer; }
+.btn.primary { background: var(--orange); border-color: var(--orange); color: var(--ink); }
+.btn:hover { border-color: var(--ink-soft); }
+.btn:focus-visible, .seg:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+.speed { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--ink-soft); }
+.toggle { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; cursor: pointer; }
+.toggle input { width: 20px; height: 20px; accent-color: var(--orange-deep); }
+.spacer { flex: 1; }
+.progress { font-family: var(--font-code); font-size: 16px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.keys { font-size: 14px; color: var(--ink-soft); }
+kbd { font-family: var(--font-code); font-size: 13px; background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; padding: 1px 5px; }
+@media (max-width: 860px) { .main { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .cell, .ln { transition: none; } .cell.cur { transform: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Programación I · Clase 14</div>
+      <h1>🧭 Recorrido de la isla</h1>
+    </div>
+    <div class="modes" role="group" aria-label="Programa">
+      <button class="seg" id="mode-print" type="button" aria-pressed="true">Recorrer e imprimir</button>
+      <button class="seg" id="mode-count" type="button" aria-pressed="false">Contar 💀</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="col">
+      <div class="code" id="code" aria-label="Código en Python"></div>
+      <div class="vars" id="vars"></div>
+      <div class="note" id="note" aria-live="polite"></div>
+    </div>
+    <div class="col">
+      <div class="isla-card">
+        <div class="grid" id="grid"></div>
+        <div class="legend">Toca una casilla para cambiar su emoji: 🌴 → 💀 → 🦜 → 💎</div>
+        <div class="out" id="out"><div class="lbl">Salida</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="b-reset" type="button">⟲ Reiniciar</button>
+    <button class="btn" id="b-back" type="button">← Anterior</button>
+    <button class="btn primary" id="b-next" type="button">Siguiente línea →</button>
+    <button class="btn" id="b-cell" type="button">Siguiente casilla ⇥</button>
+    <button class="btn" id="b-play" type="button">▶ Reproducir</button>
+    <label class="speed" for="speed">Lento <input id="speed" type="range" min="250" max="2000" step="50" value="900" style="direction: rtl"> Rápido</label>
+    <label class="toggle" for="quiz"><input id="quiz" type="checkbox"> ¿Qué sigue?</label>
+    <div class="spacer"></div>
+    <span class="progress" id="progress"></span>
+  </div>
+  <div class="keys"><kbd>→</kbd> o el clicker: siguiente línea · <kbd>←</kbd>: anterior · <kbd>Espacio</kbd>: reproducir o pausar · <kbd>Enter</kbd>: siguiente casilla · <kbd>R</kbd>: reiniciar</div>
+</div>
+
+<script>
+(function () {
+  var EMOJIS = ["🌴", "💀", "🦜", "💎"];
+  var map = [["🌴", "💀", "🌴", "🦜"], ["🌴", "🌴", "💀", "🌴"], ["💀", "🌴", "🌴", "💎"]];
+  var mode = "print";
+  var trace = [];
+  var idx = -1;
+  var hidden = false;
+  var timer = null;
+
+  var CODE = {
+    print: [
+      '<span class="kf">for f in range(len(isla)):</span>',
+      '    <span class="kc">for c in range(len(isla[<span class="kf">f</span>])):</span>',
+      '        print(<span class="kf">f</span>, <span class="kc">c</span>, isla[<span class="kf">f</span>][<span class="kc">c</span>])'
+    ],
+    count: [
+      'calaveras = 0',
+      '<span class="kf">for f in range(len(isla)):</span>',
+      '    <span class="kc">for c in range(len(isla[<span class="kf">f</span>])):</span>',
+      '        if isla[<span class="kf">f</span>][<span class="kc">c</span>] == <span class="ks">"💀"</span>:',
+      '            calaveras = calaveras + 1',
+      'print(<span class="ks">"Calaveras:"</span>, calaveras)'
+    ]
+  };
+
+  function rows() { return map.length; }
+  function cols() { return map[0].length; }
+
+  function buildTrace() {
+    var ev = [];
+    var out = [];
+    var visits = [];
+    var cal = 0;
+    var L = mode === "print" ? { forf: 0, forc: 1, body: 2 } : { init: 0, forf: 1, forc: 2, iff: 3, inc: 4, prt: 5 };
+    function push(o) {
+      o.out = out.slice(); o.visits = visits.slice(); o.cal = cal;
+      ev.push(o);
+    }
+    if (mode === "count") push({ line: L.init, f: null, c: null, note: "El contador empieza en 0, una sola vez, antes de los ciclos." });
+    for (var f = 0; f < rows(); f++) {
+      push({ line: L.forf, f: f, c: null, newRow: true,
+        note: f === 0 ? "El for de afuera empieza: f vale 0, la primera fila." : "Terminó la fila " + (f - 1) + ". El for de afuera avanza: f vale " + f + "." });
+      for (var c = 0; c < cols(); c++) {
+        visits.push([f, c]);
+        var n;
+        if (c === 0 && f > 0) n = "c vuelve a 0: el for de adentro empieza de nuevo en la fila " + f + ".";
+        else if (c === 0) n = "El for de adentro empieza: c vale 0. Casilla isla[0][0].";
+        else n = "El for de adentro avanza: c vale " + c + ". Casilla isla[" + f + "][" + c + "].";
+        push({ line: L.forc, f: f, c: c, newCell: true, note: n });
+        var val = map[f][c];
+        if (mode === "print") {
+          out.push(f + " " + c + " " + val);
+          push({ line: L.body, f: f, c: c, note: "Imprime la casilla [" + f + "][" + c + "]: " + val });
+        } else {
+          var yes = val === "💀";
+          push({ line: L.iff, f: f, c: c, hit: yes, note: "¿isla[" + f + "][" + c + "] es 💀? Es " + val + ": " + (yes ? "sí." : "no, sigue.") });
+          if (yes) { cal++; push({ line: L.inc, f: f, c: c, hit: true, note: "Suma 1: calaveras vale " + cal + "." }); }
+        }
+      }
+    }
+    if (mode === "count") { out.push("Calaveras: " + cal); push({ line: L.prt, f: rows() - 1, c: cols() - 1, done: true, note: "Los dos for terminaron. El print va al final: Calaveras: " + cal + "." }); }
+    else { trace = ev; ev.push({ line: -1, f: rows() - 1, c: cols() - 1, out: out.slice(), visits: visits.slice(), cal: cal, done: true, note: "Fin: " + visits.length + " vueltas = " + rows() + " filas × " + cols() + " columnas." }); }
+    if (mode === "count") ev[ev.length - 1].note += " En total, " + visits.length + " vueltas = " + rows() + " × " + cols() + ".";
+    trace = ev;
+  }
+
+  var codeEl = document.getElementById("code");
+  var varsEl = document.getElementById("vars");
+  var noteEl = document.getElementById("note");
+  var gridEl = document.getElementById("grid");
+  var outEl = document.getElementById("out");
+  var progEl = document.getElementById("progress");
+  var playBtn = document.getElementById("b-play");
+  var quizEl = document.getElementById("quiz");
+
+  function renderCode(line) {
+    codeEl.innerHTML = CODE[mode].map(function (t, i) {
+      return '<div class="ln' + (i === line ? " on" : "") + '"><span class="num">' + (i + 1) + "</span><span>" + t + "</span></div>";
+    }).join("");
+  }
+
+  function cellText(e) {
+    if (!e || e.f === null || e.c === null) return "—";
+    return map[e.f][e.c];
+  }
+
+  function renderVars(e, prev) {
+    var fv = e && e.f !== null && e.f !== undefined ? e.f : "—";
+    var cv = e && e.c !== null && e.c !== undefined ? e.c : "—";
+    var cell = cellText(e);
+    if (hidden) { fv = "?"; cv = "?"; cell = "?"; }
+    var fFlash = e && prev && e.f !== prev.f && !hidden;
+    var cFlash = e && prev && e.c !== prev.c && !hidden;
+    var h = '<div class="var f' + (fFlash ? " flash" : "") + '"><span class="k">f (fila)</span><span class="v">' + fv + "</span></div>" +
+      '<div class="var c' + (cFlash ? " flash" : "") + '"><span class="k">c (columna)</span><span class="v">' + cv + "</span></div>" +
+      '<div class="var"><span class="k">isla[f][c]</span><span class="v">' + cell + "</span></div>";
+    if (mode === "count") h += '<div class="var"><span class="k">calaveras</span><span class="v">' + (e ? e.cal : 0) + "</span></div>";
+    varsEl.innerHTML = h;
+  }
+
+  function renderGrid(e) {
+    gridEl.style.setProperty("--cols", cols());
+    var curF = e && !hidden ? e.f : null;
+    var curC = e && !hidden ? e.c : null;
+    var order = {};
+    if (e) {
+      var v = e.visits;
+      var upto = hidden ? v.length - 1 : v.length;
+      for (var i = 0; i < upto; i++) order[v[i][0] + "," + v[i][1]] = i + 1;
+    }
+    var h = '<div class="hdr"></div>';
+    for (var c = 0; c < cols(); c++) h += '<div class="hdr' + (curC === c ? " hot-c" : "") + '">c = ' + c + "</div>";
+    for (var f = 0; f < rows(); f++) {
+      h += '<div class="hdr row' + (curF === f ? " hot-f" : "") + '">f = ' + f + "</div>";
+      for (c = 0; c < cols(); c++) {
+        var k = f + "," + c;
+        var cls = "cell";
+        if (curF === f) cls += " rowband";
+        if (curF === f && curC === c) { cls += " cur"; if (e.hit) cls += " hit"; }
+        h += '<div class="' + cls + '" role="button" tabindex="0" data-f="' + f + '" data-c="' + c + '" aria-label="Casilla fila ' + f + " columna " + c + ": " + map[f][c] + '">' +
+          (order[k] ? '<span class="badge">' + order[k] + "</span>" : "") + map[f][c] + "</div>";
+      }
+    }
+    gridEl.innerHTML = h;
+  }
+
+  function renderOut(e) {
+    var lines = e ? e.out : [];
+    outEl.innerHTML = '<div class="lbl">Salida</div>' + lines.map(function (l) { return '<div class="line">' + l + "</div>"; }).join("");
+    outEl.scrollTop = outEl.scrollHeight;
+  }
+
+  function render() {
+    var e = idx >= 0 ? trace[idx] : null;
+    var prev = idx > 0 ? trace[idx - 1] : null;
+    renderCode(e ? (hidden ? -1 : e.line) : -1);
+    renderVars(e, prev);
+    renderGrid(e);
+    renderOut(hidden && prev ? prev : e);
+    if (!e) {
+      noteEl.className = "note";
+      noteEl.textContent = "Presiona Siguiente línea (o la flecha →) para empezar a recorrer la isla.";
+    } else if (hidden) {
+      noteEl.className = "note ask";
+      noteEl.textContent = "¿Qué casilla sigue? Díganlo en voz alta: f vale ?, c vale ?";
+    } else {
+      noteEl.className = "note";
+      noteEl.textContent = e.note;
+    }
+    var visited = e ? (hidden ? e.visits.length - 1 : e.visits.length) : 0;
+    progEl.textContent = "Vuelta " + visited + " de " + rows() * cols();
+  }
+
+  function step() {
+    if (hidden) { hidden = false; render(); return true; }
+    if (idx >= trace.length - 1) { stop(); return false; }
+    idx++;
+    if (quizEl.checked && trace[idx].newCell) { hidden = true; stop(); }
+    render();
+    return true;
+  }
+  function back() {
+    stop();
+    if (hidden) { hidden = false; idx--; render(); return; }
+    if (idx >= 0) { idx--; render(); }
+  }
+  function nextCell() {
+    stop();
+    if (hidden) { hidden = false; render(); return; }
+    var guard = 0;
+    do { if (!step()) return; guard++; } while (!trace[idx].newCell && !trace[idx].done && guard < 100 && !hidden);
+    if (!hidden && trace[idx].newCell && idx < trace.length - 1 && !trace[idx + 1].newCell && !trace[idx + 1].newRow) { idx++; render(); }
+  }
+  function reset() { stop(); idx = -1; hidden = false; buildTrace(); render(); }
+  function speed() { return Number(document.getElementById("speed").value); }
+  function play() {
+    if (idx >= trace.length - 1) reset();
+    playBtn.textContent = "⏸ Pausar";
+    timer = setInterval(function () { if (!step() || hidden) stop(); }, speed());
+  }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } playBtn.textContent = "▶ Reproducir"; }
+  function toggle() { if (timer) stop(); else play(); }
+
+  function setMode(m) {
+    mode = m;
+    document.getElementById("mode-print").setAttribute("aria-pressed", String(m === "print"));
+    document.getElementById("mode-count").setAttribute("aria-pressed", String(m === "count"));
+    reset();
+  }
+
+  document.getElementById("b-next").addEventListener("click", function () { stop(); step(); });
+  document.getElementById("b-back").addEventListener("click", back);
+  document.getElementById("b-cell").addEventListener("click", nextCell);
+  document.getElementById("b-reset").addEventListener("click", reset);
+  playBtn.addEventListener("click", toggle);
+  document.getElementById("speed").addEventListener("input", function () { if (timer) { stop(); play(); } });
+  document.getElementById("mode-print").addEventListener("click", function () { setMode("print"); });
+  document.getElementById("mode-count").addEventListener("click", function () { setMode("count"); });
+  quizEl.addEventListener("change", function () { if (!quizEl.checked && hidden) { hidden = false; render(); } });
+
+  function cycle(t) {
+    var f = Number(t.getAttribute("data-f")), c = Number(t.getAttribute("data-c"));
+    var i = EMOJIS.indexOf(map[f][c]);
+    map[f][c] = EMOJIS[(i + 1) % EMOJIS.length];
+    reset();
+  }
+  gridEl.addEventListener("click", function (ev) { var t = ev.target.closest(".cell"); if (t) cycle(t); });
+  gridEl.addEventListener("keydown", function (ev) {
+    var t = ev.target.closest(".cell");
+    if (t && ev.key === "Enter") { ev.preventDefault(); ev.stopPropagation(); cycle(t); }
+  });
+
+  document.addEventListener("keydown", function (ev) {
+    var tag = (ev.target.tagName || "").toLowerCase();
+    if (tag === "input") return;
+    if (ev.target.closest && ev.target.closest(".cell")) return;
+    if (ev.key === "ArrowRight" || ev.key === "PageDown") { ev.preventDefault(); stop(); step(); }
+    else if (ev.key === "ArrowLeft" || ev.key === "PageUp") { ev.preventDefault(); back(); }
+    else if (ev.key === " ") { ev.preventDefault(); toggle(); }
+    else if (ev.key === "Enter" && tag !== "button") { ev.preventDefault(); nextCell(); }
+    else if (ev.key === "r" || ev.key === "R") { reset(); }
+  });
+
+  reset();
+})();
+</script>
+
+</body></html>
